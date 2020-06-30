@@ -7,26 +7,36 @@ fun main() {
     print(Parser(toParse).readValue())
 }
 
-class Parser(val input: CharSequence) {
+class Parser(private val input: CharSequence) {
     var cursor: Int = 0;
 
-    fun step(): Char {
+    private fun step(): Char {
         return input[cursor++]
     }
 
-    fun peek(): Char {
+    private fun peek(): Char {
         return input[cursor]
     }
 
-    fun skip() {
+    private fun skip() {
         cursor++
     }
 
-    fun hasNext(): Boolean {
+    private fun hasNext(): Boolean {
         return cursor < input.length
     }
 
-    fun read(predicate: (Char) -> Boolean): String {
+    private fun readHexChar(): Char? {
+        val oldCursor = cursor
+        return try {
+            read(::isHexDigit).toInt(16).toChar()
+        } catch (e: NumberFormatException) {
+            cursor = oldCursor
+            null
+        }
+    }
+
+    private fun read(predicate: (Char) -> Boolean): String {
         val result = StringBuilder()
         while (hasNext() && predicate(peek())) {
             result.append(step())
@@ -34,7 +44,7 @@ class Parser(val input: CharSequence) {
         return result.toString()
     }
 
-    fun read(pattern: CharSequence): String {
+    private fun read(pattern: CharSequence): String {
         val result = StringBuilder()
         var patternCursor = 0
         while (hasNext() && patternCursor < pattern.length && peek() == pattern[patternCursor++]) {
@@ -66,7 +76,6 @@ class Parser(val input: CharSequence) {
         val oldCursor = cursor
         try {
             var isNegative = false
-            var integer: String
             var fraction: String? = null
             var exponentIsNegative = false
             var exponent: String? = null
@@ -75,7 +84,7 @@ class Parser(val input: CharSequence) {
                 skip()
             }
 
-            integer = read(::isDigit)
+            val integer: String = read(::isDigit)
             if (integer == "") {
                 return null
             }
@@ -118,16 +127,6 @@ class Parser(val input: CharSequence) {
         } catch (e: NumberFormatException) {
             cursor = oldCursor
             return null
-        }
-    }
-
-    private fun readHexChar(): Char? {
-        val oldCursor = cursor
-        return try {
-            read(::isHexDigit).toInt(16).toChar()
-        } catch (e: NumberFormatException) {
-            cursor = oldCursor
-            null
         }
     }
 
