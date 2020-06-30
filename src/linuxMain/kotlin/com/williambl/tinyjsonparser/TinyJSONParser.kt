@@ -75,14 +75,9 @@ class Parser(val input: CharSequence) {
                 skip()
             }
 
-            integer = read(::isOneToNine)
-            if (integer != "") {
-                integer += read(::isDigit)
-            }
+            integer = read(::isDigit)
             if (integer == "") {
-                if (hasNext() && peek() == '0')
-                    integer = "0"
-                else return null
+                return null
             }
 
             if (hasNext() && peek() == '.') {
@@ -107,7 +102,9 @@ class Parser(val input: CharSequence) {
                     result *= -1
 
                 val exp = exponent?.toInt() ?: 0
-                result *= pow(10.0, (if (exponentIsNegative) -1 * exp else exp).toDouble()).toInt()
+                if (exponentIsNegative)
+                    return result.toDouble() * pow(10.0, (-1 * exp).toDouble())
+                result *= pow(10.0, (exp).toDouble()).toInt()
                 return result
             }
 
@@ -269,10 +266,6 @@ fun isWhitespace(input: Char): Boolean {
 
 fun isDigit(input: Char): Boolean {
     return input in '0'..'9'
-}
-
-fun isOneToNine(input: Char): Boolean {
-    return input in '1'..'9'
 }
 
 fun isHexDigit(input: Char): Boolean {
