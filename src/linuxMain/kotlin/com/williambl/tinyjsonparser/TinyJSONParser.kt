@@ -4,7 +4,7 @@ import platform.posix.pow
 
 fun main() {
     val toParse = generateSequence(::readLine).joinToString("\n")
-    print(Parser(toParse).read(::isWhitespace))
+    print(Parser(toParse).readString())
 }
 
 class Parser(val input: CharSequence) {
@@ -59,6 +59,7 @@ class Parser(val input: CharSequence) {
     }
 
     fun readNumber(): Number? {
+        val oldCursor = cursor
         try {
             var isNegative = false
             var integer: String
@@ -113,11 +114,55 @@ class Parser(val input: CharSequence) {
             result *= pow(10.0, (if (exponentIsNegative) -1 * exp else exp).toDouble())
             return result
         } catch (e: NumberFormatException) {
+            cursor = oldCursor
             return null
         }
     }
 
-    //TODO: readString
+    private fun readHexChar(): Char? {
+        val oldCursor = cursor
+        return try {
+            read(::isHexDigit).toInt(16).toChar()
+        } catch (e: NumberFormatException) {
+            cursor = oldCursor
+            null
+        }
+    }
+
+    fun readString(): String? {
+        val oldCursor = cursor
+        val result = StringBuilder()
+        if (peek() != '"')
+            return null
+        skip()
+
+        while (peek() != '"') {
+            val char = step()
+            if (char == '\\') {
+                when (val it = step()) {
+                    '"' -> result.append('"')
+                    '\\' -> result.append('\\')
+                    '/' -> result.append('/')
+                    'b' -> result.append('\b')
+                    'f' -> result.append(0x0C.toChar())
+                    'n' -> result.append('\n')
+                    'r' -> result.append('\r')
+                    't' -> result.append('\t')
+                    'u' -> result.append(readHexChar())
+                    else -> result.append(it)
+                }
+            } else {
+                if (!isWhitespace(char) || char == ' ') {
+                    result.append(char)
+                } else {
+                    cursor = oldCursor
+                    return null
+                }
+            }
+        }
+
+        return result.toString()
+    }
 }
 
 fun isWhitespace(input: Char): Boolean {
@@ -130,6 +175,10 @@ fun isDigit(input: Char): Boolean {
 
 fun isOneToNine(input: Char): Boolean {
     return input in '1'..'9'
+}
+
+fun isHexDigit(input: Char): Boolean {
+    return input in '0'..'9' || input in 'a'..'f' || input in 'A'..'F'
 }
 
 class ParseException: Exception()
