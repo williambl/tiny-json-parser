@@ -137,9 +137,10 @@ class Parser(val input: CharSequence) {
     fun readString(): String? {
         val oldCursor = cursor
         val result = StringBuilder()
-        if (peek() != '"')
+        if (step() != '"') {
+            cursor = oldCursor
             return null
-        skip()
+        }
 
         while (hasNext() && peek() != '"') {
             val char = step()
@@ -171,9 +172,10 @@ class Parser(val input: CharSequence) {
 
     fun readArray(): List<Any?>? {
         val oldCursor = cursor
-        if (peek() != '[')
+        if (step() != '[') {
+            cursor = oldCursor
             return null
-        skip()
+        }
         read(::isWhitespace)
         val result = mutableListOf<Any?>()
         while (hasNext() && peek() != ']') {
@@ -183,10 +185,45 @@ class Parser(val input: CharSequence) {
                 cursor = oldCursor
                 return null
             }
-            skip()
+            if (peek() == ',')
+                skip()
             read(::isWhitespace)
         }
+        skip()
         return result.toList()
+    }
+
+    fun readObject(): Map<String, Any?>? {
+        val oldCursor = cursor
+        if (step() != '{') {
+            cursor = oldCursor
+            return null
+        }
+        read(::isWhitespace)
+        val result = mutableMapOf<String, Any?>()
+        while (hasNext() && peek() != '}') {
+            read(::isWhitespace)
+            val key = readString()
+            if (key == null) {
+                cursor = oldCursor
+                return null
+            }
+            read(::isWhitespace)
+            if (step() != ':') {
+                cursor = oldCursor
+                return null
+            }
+            val value = readValue()
+            result[key] = value
+            if (hasNext() && peek() !in listOf('}', ',')) {
+                cursor = oldCursor
+                return null
+            }
+            if (peek() == ',')
+                skip()
+            read(::isWhitespace)
+        }
+        return result.toMap()
     }
 
     fun readValue(): Any? {
@@ -215,6 +252,11 @@ class Parser(val input: CharSequence) {
         if (arrayResult != null) {
             read(::isWhitespace)
             return arrayResult
+        }
+        val objectResult = readObject()
+        if (objectResult != null) {
+            read(::isWhitespace)
+            return objectResult
         }
         cursor = oldCursor
         throw ParseException()
