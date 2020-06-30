@@ -165,8 +165,28 @@ class Parser(val input: CharSequence) {
                 }
             }
         }
-
+        skip()
         return result.toString()
+    }
+
+    fun readArray(): List<Any?>? {
+        val oldCursor = cursor
+        if (peek() != '[')
+            return null
+        skip()
+        read(::isWhitespace)
+        val result = mutableListOf<Any?>()
+        while (hasNext() && peek() != ']') {
+            val value = readValue()
+            result.add(value)
+            if (hasNext() && peek() !in listOf(']', ',')) {
+                cursor = oldCursor
+                return null
+            }
+            skip()
+            read(::isWhitespace)
+        }
+        return result.toList()
     }
 
     fun readValue(): Any? {
@@ -190,6 +210,11 @@ class Parser(val input: CharSequence) {
         if (numberResult != null) {
             read(::isWhitespace)
             return numberResult
+        }
+        val arrayResult = readArray()
+        if (arrayResult != null) {
+            read(::isWhitespace)
+            return arrayResult
         }
         cursor = oldCursor
         throw ParseException()
