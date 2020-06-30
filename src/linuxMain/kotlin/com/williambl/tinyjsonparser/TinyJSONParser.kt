@@ -4,7 +4,7 @@ import platform.posix.pow
 
 fun main() {
     val toParse = generateSequence(::readLine).joinToString("\n")
-    print(Parser(toParse).readNumber())
+    print(Parser(toParse).readValue())
 }
 
 class Parser(val input: CharSequence) {
@@ -167,6 +167,32 @@ class Parser(val input: CharSequence) {
         }
 
         return result.toString()
+    }
+
+    fun readValue(): Any? {
+        val oldCursor = cursor
+        read(::isWhitespace)
+        if (readNull()) {
+            read(::isWhitespace)
+            return null
+        }
+        val boolResult = readBoolean()
+        if (boolResult != null) {
+            read(::isWhitespace)
+            return boolResult
+        }
+        val stringResult = readString()
+        if (stringResult != null) {
+            read(::isWhitespace)
+            return stringResult
+        }
+        val numberResult = readNumber()
+        if (numberResult != null) {
+            read(::isWhitespace)
+            return numberResult
+        }
+        cursor = oldCursor
+        throw ParseException()
     }
 }
 
