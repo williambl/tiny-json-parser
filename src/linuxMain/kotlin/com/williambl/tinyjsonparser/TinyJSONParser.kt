@@ -4,7 +4,7 @@ import platform.posix.pow
 
 fun main() {
     val toParse = generateSequence(::readLine).joinToString("\n")
-    print(Parser(toParse).readString())
+    print(Parser(toParse).readNumber())
 }
 
 class Parser(val input: CharSequence) {
@@ -22,9 +22,13 @@ class Parser(val input: CharSequence) {
         cursor++
     }
 
+    fun hasNext(): Boolean {
+        return cursor < input.length
+    }
+
     fun read(predicate: (Char) -> Boolean): String {
         val result = StringBuilder()
-        while (predicate(peek())) {
+        while (hasNext() && predicate(peek())) {
             result.append(step())
         }
         return result.toString()
@@ -33,8 +37,8 @@ class Parser(val input: CharSequence) {
     fun read(pattern: CharSequence): String {
         val result = StringBuilder()
         var patternCursor = 0
-        while (peek() == pattern[patternCursor++]) {
-            result.append(skip())
+        while (hasNext() && patternCursor < pattern.length && peek() == pattern[patternCursor++]) {
+            result.append(step())
         }
         return result.toString()
     }
@@ -76,20 +80,21 @@ class Parser(val input: CharSequence) {
                 integer += read(::isDigit)
             }
             if (integer == "") {
-                if (peek() == '0')
+                if (hasNext() && peek() == '0')
                     integer = "0"
-                return null
+                else return null
             }
 
-            if (peek() == '.') {
+            if (hasNext() && peek() == '.') {
                 skip()
                 fraction = read(::isDigit)
             }
-            if (peek().toLowerCase() == 'e') {
-                if (peek() == '-') {
+            if (hasNext() && peek().toLowerCase() == 'e') {
+                skip()
+                if (hasNext() && peek() == '-') {
                     exponentIsNegative = true
                     skip()
-                } else if (peek() == '+') {
+                } else if (hasNext() && peek() == '+') {
                     skip()
                 }
 
@@ -136,7 +141,7 @@ class Parser(val input: CharSequence) {
             return null
         skip()
 
-        while (peek() != '"') {
+        while (hasNext() && peek() != '"') {
             val char = step()
             if (char == '\\') {
                 when (val it = step()) {
